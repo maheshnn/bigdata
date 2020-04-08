@@ -15,11 +15,30 @@ class Utils extends Serializable {
         val pattern(ip:String) = line
         return (ip.toString)
     }
+    
+    def containsurl(line:String):Boolean = return line matches """^(\S+) (\S+) (\S+) \[([\w:/]+\s[+\-]\d{4})\] "(\S+) (\S+)(.*)" (\d{3}) (\S+)"""
+    
+    //Extract only URL
+    def extracturl(line:String):(String) = {
+        val PATTERN = """^(\S+) (\S+) (\S+) \[([\w:/]+\s[+\-]\d{4})\] "(\S+) (\S+)(.*)" (\d{3}) (\S+)""".r
+        val PATTERN(url:String) = line
+        return (url.toString)
+    }
 
     def gettop10(accessLogs:RDD[String], sc:SparkContext, topn:Int):Array[(String,Int)] = {
         //Keep only the lines which have IP
         var ipaccesslogs = accessLogs.filter(containsIP)
         var cleanips = ipaccesslogs.map(extractIP(_)).filter(isClassA)
+        var ips_tuples = cleanips.map((_,1));
+        var frequencies = ips_tuples.reduceByKey(_ + _);
+        var sortedfrequencies = frequencies.sortBy(x => x._2, false)
+        return sortedfrequencies.take(topn)
+    }
+    
+     def gettop10url(accessLogs:RDD[String], sc:SparkContext, topn:Int):Array[(String,Int)] = {
+        //Keep only the lines which have IP
+        var ipaccesslogs = accessLogs.filter(containsurl)
+        var cleanips = ipaccesslogs.map(extracturl(_))
         var ips_tuples = cleanips.map((_,1));
         var frequencies = ips_tuples.reduceByKey(_ + _);
         var sortedfrequencies = frequencies.sortBy(x => x._2, false)
@@ -56,8 +75,13 @@ object EntryPoint {
         // var accessLogs = sc.textFile("/data/spark/project/access/access.log.45.gz")
         var accessLogs = sc.textFile(args(2))
         val top10 = utils.gettop10(accessLogs, sc, args(1).toInt)
+        val top10url = utils.gettop10url(accessLogs, sc, args(3).toInt)
         println("===== TOP 10 IP Addresses =====")
         for(i <- top10){
+            println(i)
+        }
+        println("===== TOP 10 Requested URLs =====")
+        for(i <- top10url){
             println(i)
         }
     }
