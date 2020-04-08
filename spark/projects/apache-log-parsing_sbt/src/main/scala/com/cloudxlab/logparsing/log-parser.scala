@@ -75,7 +75,7 @@ object EntryPoint {
         // var accessLogs = sc.textFile("/data/spark/project/access/access.log.45.gz")
         var accessLogs = sc.textFile(args(2))
         val top10 = utils.gettop10(accessLogs, sc, args(1).toInt)
-        val top10url = utils.gettop10url(accessLogs, sc, args(3).toInt)
+        val top10url = utils.gettop10url(accessLogs, sc, args(1).toInt)
         println("===== TOP 10 IP Addresses =====")
         for(i <- top10){
             println(i)
